@@ -33,7 +33,7 @@ def show_expenses(expenses):
     if not expenses:
         print("등록된 지출이 없습니다.")
         return
-    print("\n=== 지출 내역 ===")
+    print("\n=============== 지출 내역 ===============")
     number = 1
 
     columns = expenses[0].keys()
@@ -107,8 +107,13 @@ while True:
     elif choice == "2":
         show_expenses(expenses)
     elif choice == "3":
-        print("전체 지출:", calculate_total(expenses))
-        print(calculate_by_category(expenses))
+        print(f"전체 지출: {calculate_total(expenses):,}원")
+
+        es = calculate_by_category(expenses)
+        es = sorted(es.items(), key=lambda x: x[1], reverse=True)
+        for expense in es:
+            print(f"{expense[0]}: {expense[1]:,}원")
+
     elif choice == "4":
         save_expenses("sample_expenses.csv", expenses)
         print("저장했습니다.")
