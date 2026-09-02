@@ -1,5 +1,4 @@
-import csv
-import os
+from db_module import add_expense_db, calculate_total_db, get_expenses_db
 import pandas as pd
 import streamlit as st
 
@@ -47,45 +46,13 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-FILE_PATH = "sample_expenses.csv"
-
-
-# 파일 로드 함수
-def load_expenses(file_path):
-  expenses = []
-  if not os.path.exists(file_path):
-    return expenses
-  try:
-    with open(file_path, "r", encoding="utf-8-sig", newline="") as file:
-      reader = csv.DictReader(file)
-      for row in reader:
-        try:
-          row["amount"] = int(row["amount"])
-        except ValueError:
-          continue
-        expenses.append(row)
-  except Exception:
-    return []
-  return expenses
-
-
-# 파일 저장 함수
-def save_expenses(file_path, expenses):
-  fieldnames = ["date", "category", "description", "amount"]
-  with open(file_path, "w", encoding="utf-8-sig", newline="") as file:
-    writer = csv.DictWriter(file, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(expenses)
-
-
 # 앱 타이틀
 st.title("개인 지출 관리 웹 서비스")
 
-# 데이터 로드 (세션 상태 유지)
-if "expenses" not in st.session_state:
-  st.session_state.expenses = load_expenses(FILE_PATH)
+# 데이터 로드 (세션 상태 유지 - 새로고침 시 DB에서 다시 최신 데이터를 불러옴)
+st.session_state.expenses = get_expenses_db()
 
-# 상단 탭 메뉴 구성 (모바일에서도 화면 상단에 고정되어 항상 보입니다)
+# 상단 탭 메뉴 구성
 tab1, tab2, tab3 = st.tabs(["지출 목록 보기", "지출 추가하기", "지출 요약"])
 
 # 1. 지출 목록 보기 탭
@@ -96,12 +63,9 @@ with tab1:
     st.info("등록된 지출 내역이 없습니다.")
   else:
     df = pd.DataFrame(st.session_state.expenses)
-    df["amount"] = df["amount"].apply(lambda x: f"{x:,}원")
-    st.dataframe(df, use_container_width=True)
-
-    if st.button("변경사항 파일로 저장"):
-      save_expenses(FILE_PATH, st.session_state.expenses)
-      st.success("파일에 성공적으로 저장되었습니다!")
+    display_df = df[["date", "category", "description", "amount"]].copy()
+    display_df["amount"] = display_df["amount"].apply(lambda x: f"{x:,}원")
+    st.dataframe(display_df, use_container_width=True)
 
 # 2. 지출 추가하기 탭
 with tab2:
@@ -121,15 +85,12 @@ with tab2:
       elif amount <= 0:
         st.error("금액은 0보다 큰 값이어야 합니다.")
       else:
-        new_item = {
-            "date": str(date),
-            "category": category.strip(),
-            "description": description.strip(),
-            "amount": int(amount),
-        }
-        st.session_state.expenses.append(new_item)
-        save_expenses(FILE_PATH, st.session_state.expenses)
-        st.success("지출 내역이 추가되고 저장되었습니다!")
+        success = add_expense_db(
+            str(date), category.strip(), description.strip(), int(amount)
+        )
+        if success:
+          st.session_state.expenses = get_expenses_db()
+          st.rerun()
 
 # 3. 지출 요약 탭
 with tab3:
