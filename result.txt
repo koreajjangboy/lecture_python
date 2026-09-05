@@ -1,0 +1,15 @@
+문장 분석 결과
+예문: python data data data python analysis data python study
+
+가장 많이 등장한 단어
+'data' - 4번
+
+가장 적게 등장한 단어
+'analysis' - 1번
+
+특정 단어가 몇 번 등장 했는지 검색
+'python'은 문장에 3번 등장했습니다.
+
+사용자가 입력한 기준 횟수(2회 이상) 등장한 단어 검색
+'python' - 3번
+'data' - 4번
